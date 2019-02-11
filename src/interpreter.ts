@@ -1,4 +1,4 @@
-import strip from 'parse-comment-es6';
+import strip from "parse-comment-es6";
 import findExports from "./findExports";
 
 export interface ModuleItem {
@@ -20,50 +20,74 @@ export default class Interpreter {
      * 10 11  export (default) { xxx1, xxx2 } // can not match export { complex code } if (default) just export single one identifer
      * 12  module.exports = {}
      */
-    private static importRegex = new RegExp(`
+    private static importRegex = new RegExp(
+        `
         exports.default\\s*=\\s*(\\w+).default
         |module.exports\\s*=\\s*(\\w+)
         |exports\\[[\\'\\"]default[\\'\\"]\\]\\s*=\\s*(\\w+)
-        |export\\s+(default\\s+){0,1}(?:const|let|var|interface|enum|async\\s+function|function|function\\*|class|abstract\\sclass)\\s+([\\w]+)
+        |export\\s+(default\\s+){0,1}(?:const|let|var|interface|type|enum|async\\s+function|function|function\\*|class|abstract\\sclass)\\s+([\\w]+)
         |exports\\.([\\w]+)\\s*=
         |exports\\[\\"([\\w]+)\\"\\]\\s*=
         |Object.defineProperty\\(\\s*exports\\s*,\\s*[\\'|\\"]([\\w]+)[\\'|\\"]
         |export\\s+default\\s+([\\w]+)
         |export\\s+(default\\s+){0,1}\\{([^\\}]+)\\}
         |module.exports\\s+=\\s+\\{([^\\}]+)\\}
-    `.replace(/\s*/g, ''), 'g');
+    `.replace(/\s*/g, ""),
+        "g"
+    );
 
     private static importBlockRegex = /[\w]+/g;
 
-    private static unWantedName = ['__esModule', 'function', 'exports', 'require', 'default'];
+    private static unWantedName = [
+        "__esModule",
+        "function",
+        "exports",
+        "require",
+        "default"
+    ];
 
-    public run(text :string, isIndex: boolean, moduleName :string, fileName: string) {
-        return this.extractModuleFromFile(strip(text).text, isIndex, moduleName, fileName);
+    public run(
+        text: string,
+        isIndex: boolean,
+        moduleName: string,
+        fileName: string
+    ) {
+        return this.extractModuleFromFile(
+            strip(text).text,
+            isIndex,
+            moduleName,
+            fileName
+        );
     }
 
     private addDefaultName(name: string, resultList: Array<ModuleItem>) {
         // support export['default'] = _xxxx2 or _xxxx
-        const mt = name.match(/(?:^_(\w+)2)|(?:^_(\w+))/)
+        const mt = name.match(/(?:^_(\w+)2)|(?:^_(\w+))/);
         let defaultName = name;
         if (mt != null) {
-            defaultName =  mt[1] != null ? mt[1] : mt[2];
+            defaultName = mt[1] != null ? mt[1] : mt[2];
         }
         if (!this.isUnwantedName(defaultName)) {
             resultList.push({
                 default: true,
-                name: defaultName,
-            })
+                name: defaultName
+            });
         }
     }
 
-    private extractModuleFromFile(text: string, isIndex: boolean, moduleName :string, fileName: string) {
+    private extractModuleFromFile(
+        text: string,
+        isIndex: boolean,
+        moduleName: string,
+        fileName: string
+    ) {
         const nameList: Array<string> = [];
-        const resultList : Array<ModuleItem> = [];
+        const resultList: Array<ModuleItem> = [];
         let res;
         let i = 0;
         Interpreter.importRegex.lastIndex = 0;
         while ((res = Interpreter.importRegex.exec(text)) != null) {
-            for (i = 1; i <= 3; i+=1) {
+            for (i = 1; i <= 3; i += 1) {
                 if (res[i] != null) {
                     this.addDefaultName(res[i], resultList);
                     break;
@@ -72,14 +96,24 @@ export default class Interpreter {
             if (res[4] != null) {
                 resultList.push({
                     default: true,
-                    name: res[5],
-                })
+                    name:
+                        res[0] && res[0].startsWith("export default type")
+                            ? `type ${res[5]}`
+                            : res[5]
+                });
                 continue;
             }
-            for (i = 5; i <= 8; i+=1) {
+            for (i = 5; i <= 8; i += 1) {
                 if (res[i] != null) {
-                    if (!this.isUnwantedName(res[i]) && !nameList.includes(res[i])) {
-                        nameList.push(res[i]);
+                    if (
+                        !this.isUnwantedName(res[i]) &&
+                        !nameList.includes(res[i])
+                    ) {
+                        if (res[0] && res[0].startsWith("export type")) {
+                            nameList.push(`type ${res[i]}`);
+                        } else {
+                            nameList.push(res[i]);
+                        }
                     }
                     break;
                 }
@@ -98,7 +132,7 @@ export default class Interpreter {
                     } else {
                         // complex export statement
                         resultList.push({
-                            parse: true,
+                            parse: true
                         });
                     }
                 }
@@ -110,22 +144,22 @@ export default class Interpreter {
                 } else {
                     // complex export statement
                     resultList.push({
-                        parse: true,
+                        parse: true
                     });
                 }
             }
         }
-        nameList.forEach((item) => {
-            if (item === 'default') {
+        nameList.forEach(item => {
+            if (item === "default") {
                 resultList.push({
                     default: true,
-                    name: isIndex ? moduleName: fileName,
-                })
+                    name: isIndex ? moduleName : fileName
+                });
             } else {
                 resultList.push({
                     default: false,
-                    name: item,
-                })
+                    name: item
+                });
             }
         });
         return resultList;
@@ -155,36 +189,47 @@ export default class Interpreter {
         return result;
     }
 
-    public isUnwantedName(name) :boolean{
+    public isUnwantedName(name): boolean {
         return Interpreter.unWantedName.includes(name);
     }
 
     public runMainFile(data, moduleName, mainFilePath) {
         // { named: [], hasDefault: true }
-        const resultList : Array<ModuleItem> = [];
+        const resultList: Array<ModuleItem> = [];
         try {
             const result = findExports(data, mainFilePath);
             if (result.hasDefault) {
                 resultList.push({
                     default: true,
-                    name: result.defaultName != null ?  result.defaultName : moduleName,
-                })
+                    name:
+                        result.defaultName != null
+                            ? result.defaultName
+                            : moduleName
+                });
             }
             result.named.forEach(name => {
                 if (!this.isUnwantedName(name) && name !== undefined) {
                     resultList.push({
                         default: false,
-                        name: name,
-                    })
+                        name: name
+                    });
                 }
             });
+            // result.types.forEach(name => {
+            //     if (!this.isUnwantedName(name) && name !== undefined) {
+            //         resultList.push({
+            //             default: false,
+            //             type: true,
+            //             name: name
+            //         });
+            //     }
+            // });
             return resultList;
         } catch (error) {
             return [];
         }
     }
 }
-
 
 /**
  * TODO:

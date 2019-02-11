@@ -92,7 +92,6 @@ suite("extractImportFromRoot", () => {
                     isPlainFile: true
                 }
             });
-        console.log(obj)
         assert.equal('./index.less', importFixer.extractImportFromRoot(obj, path.join(vscode.workspace.rootPath, 'src/app.js')))
     });
 
