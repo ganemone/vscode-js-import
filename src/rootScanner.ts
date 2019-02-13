@@ -31,14 +31,15 @@ export interface ImportObj {
 }
 
 export interface RootOptions {
-    emptyMemberPlainFiles: Array<string>;
-    defaultMemberPlainFiles: Array<string>;
-    plainFilesGlob: string;
+    emptyMemberPlainFiles: Array<string>,
+    defaultMemberPlainFiles : Array<string>,
+    plainFilesGlob: string,
     filesToScan: string;
     excludeFilesToScan: string;
 }
 
 export default class RootScanner {
+
     private interpreter = new Interpreter();
     private workspaceFolder: WorkspaceFolder;
     private options: RootOptions;
@@ -55,9 +56,8 @@ export default class RootScanner {
     public scanAllImport() {
         const relativePattern = new RelativePattern(this.workspaceFolder, this.options.filesToScan);
         // TODO: filter file not in src
-        vscode.workspace
-            .findFiles(relativePattern, this.options.excludeFilesToScan, 99999)
-            .then(files => this.processFiles(files));
+        vscode.workspace.findFiles(relativePattern, this.options.excludeFilesToScan, 99999)
+            .then((files) => this.processFiles(files));
         this.findModulesInPackageJson();
         this.processPlainFiles();
     }
@@ -78,30 +78,29 @@ export default class RootScanner {
 
     private processPlainFiles() {
         const relativePattern = new vscode.RelativePattern(this.workspaceFolder, this.options.plainFilesGlob);
-        vscode.workspace.findFiles(relativePattern, this.options.excludeFilesToScan, 99999).then(files => {
-            files
-                .filter(f => {
-                    return f.fsPath.indexOf('node_modules') === -1;
-                })
-                .map(url => {
-                    this.processPlainFile(url);
-                });
+        vscode.workspace.findFiles(relativePattern, this.options.excludeFilesToScan, 99999)
+        .then((files) => {
+            files.filter((f) => {
+                return f.fsPath.indexOf('node_modules') === -1
+            }).map((url) => {
+                this.processPlainFile(url);
+            })
         });
     }
 
     public processPlainFile(url: vscode.Uri) {
         const parsedFile = path.parse(url.fsPath);
         const name = base2camel(parsedFile.name);
-        if (this.options.emptyMemberPlainFiles.includes(parsedFile.ext.replace('.', ''))) {
+        if (this.options.emptyMemberPlainFiles.includes(parsedFile.ext.replace('\.', ''))) {
             this.cache[`${url.fsPath}-${name}`] = {
                 path: url.fsPath,
                 module: {
                     default: true,
                     name,
                     isPlainFile: true,
-                    isNotMember: true
+                    isNotMember: true,
                 },
-                isNodeModule: false
+                isNodeModule: false,
             };
         } else {
             this.cache[`${url.fsPath}-${name}`] = {
@@ -109,9 +108,9 @@ export default class RootScanner {
                 module: {
                     default: true,
                     name,
-                    isPlainFile: true
+                    isPlainFile: true,
                 },
-                isNodeModule: false
+                isNodeModule: false,
             };
         }
         JsImport.setStatusBar();
@@ -144,7 +143,7 @@ export default class RootScanner {
                 this.cache[`${file.fsPath}-${m.name}`] = {
                     path: file.fsPath,
                     module: m,
-                    isNodeModule: false
+                    isNodeModule: false,
                 };
                 if (m.default) {
                     defaultModule = m;
@@ -161,7 +160,7 @@ export default class RootScanner {
                         this.cache[`${file.fsPath}-${m.name}`] = {
                             path: file.fsPath,
                             module: m,
-                            isNodeModule: false
+                            isNodeModule: false,
                         };
                     }
                 });
@@ -179,14 +178,19 @@ export default class RootScanner {
                     return console.log(err);
                 }
                 const packageJson = JSON.parse(data);
-                ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
+                [
+                    "dependencies",
+                    "devDependencies",
+                    "peerDependencies",
+                    "optionalDependencies"
+                ].forEach(key => {
                     if (packageJson.hasOwnProperty(key)) {
                         modules.push(...Object.keys(packageJson[key]));
                     }
-                });
+                })
                 this.deleteUnusedModules(modules);
                 this.cacheModules(modules);
-            });
+            })
         }
     }
 
@@ -198,12 +202,12 @@ export default class RootScanner {
                 delete this.nodeModuleVersion[this.nodeModuleCache[name].path];
                 delete this.nodeModuleCache[name];
             }
-        });
+        })
         JsImport.setStatusBar();
     }
 
     private cacheModules(modules) {
-        modules.forEach(moduleName => {
+        modules.forEach((moduleName) => {
             const modulePath = path.join(this.workspaceFolder.uri.fsPath, 'node_modules', moduleName);
             const packageJsonPath = path.join(modulePath, 'package.json');
             if (fs.existsSync(packageJsonPath)) {
@@ -215,9 +219,9 @@ export default class RootScanner {
                     if (!this.isCachedByVersion(moduleName, packageJson)) {
                         this.cacheModulesFromMain(moduleName, modulePath, packageJson);
                     }
-                });
+                })
             }
-        });
+        })
     }
 
     private cacheModulesFromMain(moduleName, modulePath, packageJson) {
@@ -229,14 +233,13 @@ export default class RootScanner {
                 mainFilePath += '.js';
             }
         }
-
         if (fs.existsSync(mainFilePath)) {
             fs.readFile(mainFilePath, 'utf-8', (err, data) => {
                 if (err) {
                     return console.log(err);
                 }
-                const moduleKebabName = kebab2camel(moduleName);
-                const modules = this.interpreter.run(data, true, moduleKebabName, '');
+                const moduleKebabName = kebab2camel(moduleName)
+                const modules = this.interpreter.run(data, true, moduleKebabName, '')
                 let defaultModule = null;
                 modules.forEach(m => {
                     if (m.parse) {
@@ -245,7 +248,7 @@ export default class RootScanner {
                     this.nodeModuleCache[`${moduleName}-${m.name}`] = {
                         path: moduleName,
                         module: m,
-                        isNodeModule: true
+                        isNodeModule: true,
                     };
                     if (m.default) {
                         defaultModule = m;
@@ -260,7 +263,7 @@ export default class RootScanner {
                         this.nodeModuleCache[`${moduleName}-${m.name}`] = {
                             path: moduleName,
                             module: m,
-                            isNodeModule: true
+                            isNodeModule: true,
                         };
                     }
                 });
@@ -273,7 +276,7 @@ export default class RootScanner {
         if (packageJson.hasOwnProperty('version')) {
             if (this.nodeModuleVersion[moduleName] != null) {
                 if (this.nodeModuleVersion[moduleName] === packageJson.version) {
-                    return true;
+                    return true
                 } else {
                     this.nodeModuleVersion[moduleName] = packageJson.version;
                     return false;

@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 const requireRelative = require('require-relative');
 
+
 function findESNamedExports(node) {
     if (node.type !== 'ExportNamedDeclaration') {
         return [];
@@ -39,7 +40,10 @@ function findESNamedExports(node) {
         return [];
     }
 
-    if (node.declaration.type === 'FunctionDeclaration' || node.declaration.type === 'ClassDeclaration') {
+    if (
+        node.declaration.type === 'FunctionDeclaration' ||
+        node.declaration.type === 'ClassDeclaration'
+    ) {
         return [node.declaration.id.name];
     }
 
@@ -68,20 +72,29 @@ function resolveNestedNamedExports(node, absolutePathToFile) {
         node.arguments[0].type === 'StringLiteral'
     ) {
         // module.exports = require('someOtherFile.js');
-        const pathToRequiredFile = requireRelative.resolve(node.arguments[0].value, path.dirname(absolutePathToFile));
+        const pathToRequiredFile = requireRelative.resolve(
+            node.arguments[0].value,
+            path.dirname(absolutePathToFile));
 
         const requiredFileContent = fs.readFileSync(pathToRequiredFile, 'utf8');
         // eslint-disable-next-line no-use-before-define
         const { named, defaultName } = findExports(requiredFileContent, pathToRequiredFile);
         return {
             named,
-            defaultName
+            defaultName,
         };
     }
     return undefined;
 }
 
-function findCommonJSExports(node, { definedNames, absolutePathToFile, aliasesForExports }) {
+function findCommonJSExports(
+    node,
+    {
+    definedNames,
+        absolutePathToFile,
+        aliasesForExports,
+  },
+) {
     if (node.type !== 'ExpressionStatement') {
         return [];
     }
@@ -114,7 +127,9 @@ function findCommonJSExports(node, { definedNames, absolutePathToFile, aliasesFo
         return [];
     }
     if (
-        (left.object && left.object.name === 'module' && left.property.name === 'exports') ||
+        (left.object &&
+            left.object.name === 'module' &&
+            left.property.name === 'exports') ||
         aliasesForExports.has(left.name)
     ) {
         const nestedNamed = resolveNestedNamedExports(right, absolutePathToFile);
@@ -173,7 +188,9 @@ function findDefinedNames(node, definedNames) {
         }
         if (init.type === 'ObjectExpression') {
             // eslint-disable-next-line no-param-reassign
-            definedNames[id.name] = init.properties.map(({ key }) => key && key.name).filter(Boolean);
+            definedNames[id.name] = init.properties
+                .map(({ key }) => key && key.name)
+                .filter(Boolean);
         } else if (init.type === 'FunctionExpression') {
             definedNames[id.name] = []; // eslint-disable-line no-param-reassign
         }
@@ -188,7 +205,7 @@ function findDefinedNames(node, definedNames) {
  */
 function findAliasesForExports(nodes) {
     const result = new Set(['exports']);
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
         if (node.type !== 'VariableDeclaration') {
             return;
         }
@@ -210,17 +227,24 @@ function findAliasesForExports(nodes) {
     return result;
 }
 
-function findNamedExports(nodes, { absolutePathToFile, definedNames, aliasesForExports }) {
+function findNamedExports(
+    nodes,
+    {
+    absolutePathToFile,
+        definedNames,
+        aliasesForExports,
+  },
+) {
     const result = [];
     let defaultName = null;
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
         result.push(...findESNamedExports(node));
         result.push(...findNamedTypeExports(node).map(name => `type ${name}`));
         const named = findCommonJSExports(node, {
             definedNames,
             absolutePathToFile,
-            aliasesForExports
-        });
+            aliasesForExports,
+        })
         if (Array.isArray(named)) {
             result.push(...named);
         } else {
@@ -230,13 +254,13 @@ function findNamedExports(nodes, { absolutePathToFile, definedNames, aliasesForE
     });
     return {
         named: result,
-        defaultName
+        defaultName,
     };
 }
 
 function getDefaultExport(nodes) {
     let defaultName = null;
-    nodes.some(node => {
+    nodes.some((node) => {
         if (node.type === 'ExportDefaultDeclaration') {
             return true;
         }
@@ -321,22 +345,21 @@ export default function findExports(data, absolutePathToFile) {
         return {
             named: Object.keys(JSON.parse(data)),
             hasDefault: true,
-            defaultName: null
+            defaultName: null,
         };
     }
     const ast = parse(data);
     const rootNodes = findRootNodes(ast);
     const aliasesForExports = findAliasesForExports(rootNodes);
     const definedNames = {};
-    rootNodes.forEach(node => {
+    rootNodes.forEach((node) => {
         findDefinedNames(node, definedNames);
     });
     let { named, defaultName } = findNamedExports(rootNodes, {
         absolutePathToFile,
         definedNames,
-        aliasesForExports
+        aliasesForExports,
     });
-
     const defaultNameOrigin = getDefaultExport(rootNodes);
     let hasDefault = defaultNameOrigin != null || defaultName != null || aliasesForExports.size > 1;
     if (!hasDefault) {
@@ -352,6 +375,6 @@ export default function findExports(data, absolutePathToFile) {
     return {
         named,
         hasDefault,
-        defaultName: defaultName || defaultNameOrigin
+        defaultName: defaultName || defaultNameOrigin,
     };
 }

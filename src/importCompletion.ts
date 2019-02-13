@@ -2,11 +2,9 @@ import * as vscode from 'vscode';
 import JsImport from './jsImport';
 
 export class ImportCompletion implements vscode.CompletionItemProvider {
-    public provideCompletionItems(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken
-    ): Promise<vscode.CompletionItem[]> {
+    public provideCompletionItems(document: vscode.TextDocument, position: vscode.Position,
+        token: vscode.CancellationToken): Promise<vscode.CompletionItem[]> {
+
         let enabled = vscode.workspace.getConfiguration('js-import', document.uri).get<string>('codeCompletion');
         let autofix = vscode.workspace.getConfiguration('js-import', document.uri).get<string>('codeCompletionAction');
 

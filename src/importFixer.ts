@@ -7,15 +7,10 @@ import JsImport from './jsImport';
 import { ImportObj } from './rootScanner';
 import { Uri } from 'vscode';
 const path = require('path');
-var open = require('open');
+var open = require("open");
 
-function getImportDeclaration(
-    importedDefaultBinding,
-    nameSpaceImport,
-    namedImports,
-    importPath: string,
-    position: vscode.Position
-): ImportDeclaration {
+function getImportDeclaration(importedDefaultBinding, nameSpaceImport, namedImports,
+    importPath: string, position: vscode.Position): ImportDeclaration {
     return {
         importedDefaultBinding,
         namedImports,
@@ -23,12 +18,12 @@ function getImportDeclaration(
         loc: {
             start: {
                 line: position.line,
-                column: position.character
+                column: position.character,
             },
             end: {
                 line: position.line,
-                column: position.character
-            }
+                column: position.character,
+            },
         },
         range: null,
         raw: '',
@@ -36,8 +31,8 @@ function getImportDeclaration(
         leadComments: [],
         trailingComments: [],
         moduleSpecifier: importPath,
-        error: 0
-    };
+        error: 0,
+    }
 }
 
 export default class ImportFixer {
@@ -76,9 +71,7 @@ export default class ImportFixer {
             if (error && error.stack) {
                 body += error.stack;
             }
-            open(
-                'https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=' + encodeURIComponent(body)
-            );
+            open('https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=' + encodeURIComponent(body));
         }
     }
 
@@ -120,12 +113,11 @@ export default class ImportFixer {
                 relativePath = relativePath.replace(/\\/g, '/');
             }
             if (!importObj.module.isPlainFile && isIndexFile(filename)) {
-                importPath = relativePath === '' ? aliasKey : `${aliasKey}/${relativePath}`;
+                importPath = relativePath === '' ? aliasKey : `${aliasKey}/${relativePath}`
             } else {
                 const parsePath = path.parse(importObj.path);
                 const filename = importObj.module.isPlainFile ? parsePath.base : parsePath.name;
-                importPath =
-                    relativePath === '' ? `${aliasKey}/${filename}` : `${aliasKey}/${relativePath}/${filename}`;
+                importPath = relativePath === '' ? `${aliasKey}/${filename}` : `${aliasKey}/${relativePath}/${filename}`
             }
         }
         return importPath;
@@ -147,7 +139,7 @@ export default class ImportFixer {
             dir = dir.substr(2, dir.length - 2);
         }
         if (!importObj.module.isPlainFile && isIndexFile(parsePath.base)) {
-            importPath = `${dir}`;
+            importPath = `${dir}`
         } else {
             const name = importObj.module.isPlainFile ? parsePath.base : parsePath.name;
             importPath = `${dir}/${name}`;
@@ -167,17 +159,17 @@ export default class ImportFixer {
             if (this.importObj.module.isNotMember) {
                 importStatement = new ImportStatement(
                     getImportDeclaration(null, null, [], importPath, position),
-                    getImportOption(this.eol, true, this.options)
+                    getImportOption(this.eol, true, this.options),
                 );
             } else if (this.importObj.module.default) {
                 importStatement = new ImportStatement(
                     getImportDeclaration(this.importObj.module.name, null, [], importPath, position),
-                    getImportOption(this.eol, true, this.options)
+                    getImportOption(this.eol, true, this.options),
                 );
             } else {
                 importStatement = new ImportStatement(
                     getImportDeclaration(null, null, [this.importObj.module.name], importPath, position),
-                    getImportOption(this.eol, true, this.options)
+                    getImportOption(this.eol, true, this.options),
                 );
             }
         } else {
@@ -190,19 +182,14 @@ export default class ImportFixer {
                 if (imp.importedDefaultBinding !== null && imp.importedDefaultBinding === this.importObj.module.name) {
                     // TODO: we can format code
                     return;
-                } else if (
-                    imp.importedDefaultBinding !== null &&
-                    imp.importedDefaultBinding !== this.importObj.module.name
-                ) {
+                } else if (imp.importedDefaultBinding !== null && imp.importedDefaultBinding !== this.importObj.module.name) {
                     // error , two default import
                     return;
                 } else {
                     // imp.importedDefaultBinding === null
                     importStatement = new ImportStatement(
-                        Object.assign(imp, {
-                            importedDefaultBinding: this.importObj.module.name
-                        }),
-                        getImportOption(this.eol, false, this.options)
+                        Object.assign(imp, { importedDefaultBinding: this.importObj.module.name }),
+                        getImportOption(this.eol, false, this.options),
                     );
                 }
             } else {
@@ -215,21 +202,15 @@ export default class ImportFixer {
                     return;
                 }
                 importStatement = new ImportStatement(
-                    Object.assign(imp, {
-                        namedImports: imp.namedImports.concat([this.importObj.module.name])
-                    }),
-                    getImportOption(this.eol, false, this.options)
+                    Object.assign(imp, { namedImports: imp.namedImports.concat([this.importObj.module.name]) }),
+                    getImportOption(this.eol, false, this.options),
                 );
             }
         }
 
         const iec: EditChange = importStatement.getEditChange();
         let edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
-        edit.replace(
-            this.doc.uri,
-            new vscode.Range(iec.startLine, iec.startColumn, iec.endLine, iec.endColumn),
-            iec.text
-        );
+        edit.replace(this.doc.uri, new vscode.Range(iec.startLine, iec.startColumn, iec.endLine, iec.endColumn), iec.text);
         vscode.workspace.applyEdit(edit);
     }
 
@@ -237,27 +218,19 @@ export default class ImportFixer {
         let position: vscode.Position = null;
         let pos = this.options.insertPosition;
         if (pos !== 'first' && pos !== 'last') {
-            pos = 'last';
+            pos = 'last'
         }
         if (pos === 'last' && imports.length !== 0) {
             const imp = imports[imports.length - 1];
             if (imp.trailingComments.length === 0) {
                 position = new vscode.Position(imp.loc.end.line + 1, 0);
             } else {
-                position = new vscode.Position(
-                    imp.trailingComments[imp.trailingComments.length - 1].loc.end.line + 1,
-                    0
-                );
+                position = new vscode.Position(imp.trailingComments[imp.trailingComments.length - 1].loc.end.line + 1, 0);
             }
         }
 
         if (imports.length === 0) {
-            const comments = strip(this.doc.getText(), {
-                comment: true,
-                range: true,
-                loc: true,
-                raw: true
-            }).comments;
+            const comments = strip(this.doc.getText(), { comment: true, range: true, loc: true, raw: true }).comments;
 
             if (comments.length === 0) {
                 position = new vscode.Position(0, 0);
