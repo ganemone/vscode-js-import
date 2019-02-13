@@ -1,5 +1,5 @@
-import strip from "parse-comment-es6";
-import findExports from "./findExports";
+import strip from 'parse-comment-es6';
+import findExports from './findExports';
 
 export interface ModuleItem {
     name?: string;
@@ -32,18 +32,18 @@ export default class Interpreter {
         |export\\s+default\\s+([\\w]+)
         |export\\s+(default\\s+){0,1}\\{([^\\}]+)\\}
         |module.exports\\s+=\\s+\\{([^\\}]+)\\}
-    `.replace(/\s*/g, ""),
-        "g"
+    `.replace(/\s*/g, ''),
+        'g'
     );
 
     private static importBlockRegex = /[\w]+/g;
 
     private static unWantedName = [
-        "__esModule",
-        "function",
-        "exports",
-        "require",
-        "default"
+        '__esModule',
+        'function',
+        'exports',
+        'require',
+        'default'
     ];
 
     public run(
@@ -97,7 +97,7 @@ export default class Interpreter {
                 resultList.push({
                     default: true,
                     name:
-                        res[0] && res[0].startsWith("export default type")
+                        res[0] && res[0].startsWith('export default type')
                             ? `type ${res[5]}`
                             : res[5]
                 });
@@ -109,7 +109,7 @@ export default class Interpreter {
                         !this.isUnwantedName(res[i]) &&
                         !nameList.includes(res[i])
                     ) {
-                        if (res[0] && res[0].startsWith("export type")) {
+                        if (res[0] && res[0].startsWith('export type')) {
                             nameList.push(`type ${res[i]}`);
                         } else {
                             nameList.push(res[i]);
@@ -150,7 +150,7 @@ export default class Interpreter {
             }
         }
         nameList.forEach(item => {
-            if (item === "default") {
+            if (item === 'default') {
                 resultList.push({
                     default: true,
                     name: isIndex ? moduleName : fileName

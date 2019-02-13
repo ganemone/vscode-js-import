@@ -1,13 +1,13 @@
-import parseImport, { ImportDeclaration } from "parse-import-es6";
-import * as vscode from "vscode";
-import strip from "parse-comment-es6";
-import { isIndexFile, isWin, getImportOption } from "./help";
-import ImportStatement, { EditChange } from "./importStatement";
-import JsImport from "./jsImport";
-import { ImportObj } from "./rootScanner";
-import { Uri } from "vscode";
-const path = require("path");
-var open = require("open");
+import parseImport, { ImportDeclaration } from 'parse-import-es6';
+import * as vscode from 'vscode';
+import strip from 'parse-comment-es6';
+import { isIndexFile, isWin, getImportOption } from './help';
+import ImportStatement, { EditChange } from './importStatement';
+import JsImport from './jsImport';
+import { ImportObj } from './rootScanner';
+import { Uri } from 'vscode';
+const path = require('path');
+var open = require('open');
 
 function getImportDeclaration(
     importedDefaultBinding,
@@ -31,7 +31,7 @@ function getImportDeclaration(
             }
         },
         range: null,
-        raw: "",
+        raw: '',
         middleComments: [],
         leadComments: [],
         trailingComments: [],
@@ -57,7 +57,7 @@ export default class ImportFixer {
         this.doc = doc;
         this.range = range;
         if (doc != null) {
-            this.eol = doc.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+            this.eol = doc.eol === vscode.EndOfLine.LF ? '\n' : '\r\n';
         }
         this.options = options;
     }
@@ -84,13 +84,13 @@ export default class ImportFixer {
             this.resolveImport(importPath);
         } catch (error) {
             JsImport.consoleError(error);
-            let body = "";
-            body = this.doc.getText() + "\n\n";
+            let body = '';
+            body = this.doc.getText() + '\n\n';
             if (error && error.stack) {
                 body += error.stack;
             }
             open(
-                "https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=" +
+                'https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=' +
                     encodeURIComponent(body)
             );
         }
@@ -134,11 +134,11 @@ export default class ImportFixer {
                 path.dirname(importObj.path)
             );
             if (isWin()) {
-                relativePath = relativePath.replace(/\\/g, "/");
+                relativePath = relativePath.replace(/\\/g, '/');
             }
             if (!importObj.module.isPlainFile && isIndexFile(filename)) {
                 importPath =
-                    relativePath === ""
+                    relativePath === ''
                         ? aliasKey
                         : `${aliasKey}/${relativePath}`;
             } else {
@@ -147,7 +147,7 @@ export default class ImportFixer {
                     ? parsePath.base
                     : parsePath.name;
                 importPath =
-                    relativePath === ""
+                    relativePath === ''
                         ? `${aliasKey}/${filename}`
                         : `${aliasKey}/${relativePath}/${filename}`;
             }
@@ -166,10 +166,10 @@ export default class ImportFixer {
          */
         let dir = parsePath.dir;
         if (isWin()) {
-            dir = dir.replace(/\\/g, "/");
+            dir = dir.replace(/\\/g, '/');
         }
-        dir = dir.replace(/../, ".");
-        if (dir.startsWith("./..")) {
+        dir = dir.replace(/../, '.');
+        if (dir.startsWith('./..')) {
             dir = dir.substr(2, dir.length - 2);
         }
         if (!importObj.module.isPlainFile && isIndexFile(parsePath.base)) {
@@ -288,10 +288,10 @@ export default class ImportFixer {
     public getNewImportPositoin(imports) {
         let position: vscode.Position = null;
         let pos = this.options.insertPosition;
-        if (pos !== "first" && pos !== "last") {
-            pos = "last";
+        if (pos !== 'first' && pos !== 'last') {
+            pos = 'last';
         }
-        if (pos === "last" && imports.length !== 0) {
+        if (pos === 'last' && imports.length !== 0) {
             const imp = imports[imports.length - 1];
             if (imp.trailingComments.length === 0) {
                 position = new vscode.Position(imp.loc.end.line + 1, 0);

@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
-import * as fs from "fs";
-import Interpreter from "./interpreter";
-import JsImport from "./jsImport";
-import { kebab2camel, base2camel } from "./help";
-import { WorkspaceFolder, RelativePattern } from "vscode";
-const path = require("path");
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import Interpreter from './interpreter';
+import JsImport from './jsImport';
+import { kebab2camel, base2camel } from './help';
+import { WorkspaceFolder, RelativePattern } from 'vscode';
+const path = require('path');
 
 export interface ImportObj {
     path: string;
@@ -89,7 +89,7 @@ export default class RootScanner {
             .then(files => {
                 files
                     .filter(f => {
-                        return f.fsPath.indexOf("node_modules") === -1;
+                        return f.fsPath.indexOf('node_modules') === -1;
                     })
                     .map(url => {
                         this.processPlainFile(url);
@@ -102,7 +102,7 @@ export default class RootScanner {
         const name = base2camel(parsedFile.name);
         if (
             this.options.emptyMemberPlainFiles.includes(
-                parsedFile.ext.replace(".", "")
+                parsedFile.ext.replace('.', '')
             )
         ) {
             this.cache[`${url.fsPath}-${name}`] = {
@@ -137,14 +137,14 @@ export default class RootScanner {
     }
 
     private processFile(file: vscode.Uri) {
-        fs.readFile(file.fsPath, "utf8", (err, data) => {
+        fs.readFile(file.fsPath, 'utf8', (err, data) => {
             if (err) {
                 return console.log(err);
             }
             const fileName = path.parse(file.fsPath).name;
             // use for unnamed identifier
             const moduleName = path.basename(path.dirname(file.fsPath));
-            const isIndex = fileName === "index";
+            const isIndex = fileName === 'index';
             const modules = this.interpreter.run(
                 data,
                 isIndex,
@@ -195,19 +195,19 @@ export default class RootScanner {
         const modules = [];
         const packageJsonPath = path.join(
             this.workspaceFolder.uri.fsPath,
-            "package.json"
+            'package.json'
         );
         if (fs.existsSync(packageJsonPath)) {
-            fs.readFile(packageJsonPath, "utf8", (err, data) => {
+            fs.readFile(packageJsonPath, 'utf8', (err, data) => {
                 if (err) {
                     return console.log(err);
                 }
                 const packageJson = JSON.parse(data);
                 [
-                    "dependencies",
-                    "devDependencies",
-                    "peerDependencies",
-                    "optionalDependencies"
+                    'dependencies',
+                    'devDependencies',
+                    'peerDependencies',
+                    'optionalDependencies'
                 ].forEach(key => {
                     if (packageJson.hasOwnProperty(key)) {
                         modules.push(...Object.keys(packageJson[key]));
@@ -237,12 +237,12 @@ export default class RootScanner {
         modules.forEach(moduleName => {
             const modulePath = path.join(
                 this.workspaceFolder.uri.fsPath,
-                "node_modules",
+                'node_modules',
                 moduleName
             );
-            const packageJsonPath = path.join(modulePath, "package.json");
+            const packageJsonPath = path.join(modulePath, 'package.json');
             if (fs.existsSync(packageJsonPath)) {
-                fs.readFile(packageJsonPath, "utf-8", (err, data) => {
+                fs.readFile(packageJsonPath, 'utf-8', (err, data) => {
                     if (err) {
                         return console.log(err);
                     }
@@ -260,17 +260,17 @@ export default class RootScanner {
     }
 
     private cacheModulesFromMain(moduleName, modulePath, packageJson) {
-        let mainFilePath = path.join(modulePath, "src/index.js");
+        let mainFilePath = path.join(modulePath, 'src/index.js');
         if (!fs.existsSync(mainFilePath)) {
-            if (!packageJson.hasOwnProperty("main")) return;
+            if (!packageJson.hasOwnProperty('main')) return;
             mainFilePath = path.join(modulePath, packageJson.main);
             if (!fs.existsSync(mainFilePath)) {
-                mainFilePath += ".js";
+                mainFilePath += '.js';
             }
         }
 
         if (fs.existsSync(mainFilePath)) {
-            fs.readFile(mainFilePath, "utf-8", (err, data) => {
+            fs.readFile(mainFilePath, 'utf-8', (err, data) => {
                 if (err) {
                     return console.log(err);
                 }
@@ -279,7 +279,7 @@ export default class RootScanner {
                     data,
                     true,
                     moduleKebabName,
-                    ""
+                    ''
                 );
                 let defaultModule = null;
                 modules.forEach(m => {
@@ -320,7 +320,7 @@ export default class RootScanner {
     }
 
     public isCachedByVersion(moduleName, packageJson) {
-        if (packageJson.hasOwnProperty("version")) {
+        if (packageJson.hasOwnProperty('version')) {
             if (this.nodeModuleVersion[moduleName] != null) {
                 if (
                     this.nodeModuleVersion[moduleName] === packageJson.version

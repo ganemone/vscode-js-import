@@ -20,14 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import parse from "./parse";
+import parse from './parse';
 
-const fs = require("fs");
-const path = require("path");
-const requireRelative = require("require-relative");
+const fs = require('fs');
+const path = require('path');
+const requireRelative = require('require-relative');
 
 function findESNamedExports(node) {
-    if (node.type !== "ExportNamedDeclaration") {
+    if (node.type !== 'ExportNamedDeclaration') {
         return [];
     }
 
@@ -40,15 +40,15 @@ function findESNamedExports(node) {
     }
 
     if (
-        node.declaration.type === "FunctionDeclaration" ||
-        node.declaration.type === "ClassDeclaration"
+        node.declaration.type === 'FunctionDeclaration' ||
+        node.declaration.type === 'ClassDeclaration'
     ) {
         return [node.declaration.id.name];
     }
 
     const result = [];
     node.declaration.declarations.forEach(({ id }) => {
-        if (id.type === "ObjectPattern") {
+        if (id.type === 'ObjectPattern') {
             // export const { foo, bar } = something();
             result.push(...id.properties.map(({ key }) => key.name));
         } else {
@@ -59,16 +59,16 @@ function findESNamedExports(node) {
 }
 
 function resolveNestedNamedExports(node, absolutePathToFile) {
-    if (node.type === "ConditionalExpression") {
+    if (node.type === 'ConditionalExpression') {
         // Potential ternary-style export - we pick the first one
         // module.exports = foo ? require('a') : require('b');
         return resolveNestedNamedExports(node.consequent, absolutePathToFile);
     }
     if (
-        node.type === "CallExpression" &&
-        node.callee.name === "require" &&
+        node.type === 'CallExpression' &&
+        node.callee.name === 'require' &&
         node.arguments.length === 1 &&
-        node.arguments[0].type === "StringLiteral"
+        node.arguments[0].type === 'StringLiteral'
     ) {
         // module.exports = require('someOtherFile.js');
         const pathToRequiredFile = requireRelative.resolve(
@@ -76,7 +76,7 @@ function resolveNestedNamedExports(node, absolutePathToFile) {
             path.dirname(absolutePathToFile)
         );
 
-        const requiredFileContent = fs.readFileSync(pathToRequiredFile, "utf8");
+        const requiredFileContent = fs.readFileSync(pathToRequiredFile, 'utf8');
         // eslint-disable-next-line no-use-before-define
         const { named, defaultName } = findExports(
             requiredFileContent,
@@ -94,29 +94,29 @@ function findCommonJSExports(
     node,
     { definedNames, absolutePathToFile, aliasesForExports }
 ) {
-    if (node.type !== "ExpressionStatement") {
+    if (node.type !== 'ExpressionStatement') {
         return [];
     }
     if (
-        node.expression.type === "CallExpression" &&
-        node.expression.callee.type === "MemberExpression" &&
+        node.expression.type === 'CallExpression' &&
+        node.expression.callee.type === 'MemberExpression' &&
         aliasesForExports.has(node.expression.callee.object.name) &&
-        node.expression.callee.property.name === "use" &&
+        node.expression.callee.property.name === 'use' &&
         node.expression.arguments.length &&
-        node.expression.arguments[0].type === "Identifier"
+        node.expression.arguments[0].type === 'Identifier'
     ) {
         // exports.use(foo);
         return [node.expression.arguments[0].name];
     }
     if (
-        node.expression.type === "CallExpression" &&
-        node.expression.callee.type === "MemberExpression" &&
-        node.expression.callee.object.name === "Object" &&
-        node.expression.callee.property.name === "defineProperty" &&
+        node.expression.type === 'CallExpression' &&
+        node.expression.callee.type === 'MemberExpression' &&
+        node.expression.callee.object.name === 'Object' &&
+        node.expression.callee.property.name === 'defineProperty' &&
         node.expression.arguments.length > 1 &&
-        node.expression.arguments[0].type === "Identifier" &&
+        node.expression.arguments[0].type === 'Identifier' &&
         aliasesForExports.has(node.expression.arguments[0].name) &&
-        node.expression.arguments[1].type === "StringLiteral"
+        node.expression.arguments[1].type === 'StringLiteral'
     ) {
         // Object.defineProperty(exports, 'foo', { ... });
         return [node.expression.arguments[1].value];
@@ -127,8 +127,8 @@ function findCommonJSExports(
     }
     if (
         (left.object &&
-            left.object.name === "module" &&
-            left.property.name === "exports") ||
+            left.object.name === 'module' &&
+            left.property.name === 'exports') ||
         aliasesForExports.has(left.name)
     ) {
         const nestedNamed = resolveNestedNamedExports(
@@ -139,10 +139,10 @@ function findCommonJSExports(
             return nestedNamed;
         }
         // module.exports = { foo: 'foo' };
-        if (right.type === "ObjectExpression") {
+        if (right.type === 'ObjectExpression') {
             return right.properties.map(({ key }) => key.name).filter(Boolean);
         }
-        if (right.type === "Identifier") {
+        if (right.type === 'Identifier') {
             return definedNames[right.name] || [];
         }
     }
@@ -152,17 +152,17 @@ function findCommonJSExports(
     }
 
     if (
-        left.object.type === "MemberExpression" &&
-        left.object.object.name === "module" &&
-        left.object.property.name === "exports"
+        left.object.type === 'MemberExpression' &&
+        left.object.object.name === 'module' &&
+        left.object.property.name === 'exports'
     ) {
         // module.exports.foo = 'bar';
         return [left.property.name];
     }
 
     if (
-        left.type === "MemberExpression" &&
-        left.object.type === "Identifier" &&
+        left.type === 'MemberExpression' &&
+        left.object.type === 'Identifier' &&
         aliasesForExports.has(left.object.name)
     ) {
         // exports.foo = 'bar';
@@ -173,7 +173,7 @@ function findCommonJSExports(
 }
 
 function findDefinedNames(node, definedNames) {
-    if (node.type === "ExpressionStatement") {
+    if (node.type === 'ExpressionStatement') {
         const { left, right } = node.expression;
         if (left && right) {
             if (left.object) {
@@ -181,19 +181,19 @@ function findDefinedNames(node, definedNames) {
             }
         }
     }
-    if (node.type !== "VariableDeclaration") {
+    if (node.type !== 'VariableDeclaration') {
         return;
     }
     node.declarations.forEach(({ id, init }) => {
         if (!init) {
             return;
         }
-        if (init.type === "ObjectExpression") {
+        if (init.type === 'ObjectExpression') {
             // eslint-disable-next-line no-param-reassign
             definedNames[id.name] = init.properties
                 .map(({ key }) => key && key.name)
                 .filter(Boolean);
-        } else if (init.type === "FunctionExpression") {
+        } else if (init.type === 'FunctionExpression') {
             definedNames[id.name] = []; // eslint-disable-line no-param-reassign
         }
     });
@@ -206,19 +206,19 @@ function findDefinedNames(node, definedNames) {
  * const moduleName = exports;
  */
 function findAliasesForExports(nodes) {
-    const result = new Set(["exports"]);
+    const result = new Set(['exports']);
     nodes.forEach(node => {
-        if (node.type !== "VariableDeclaration") {
+        if (node.type !== 'VariableDeclaration') {
             return;
         }
         node.declarations.forEach(({ id, init }) => {
             if (!init) {
                 return;
             }
-            if (init.type !== "Identifier") {
+            if (init.type !== 'Identifier') {
                 return;
             }
-            if (init.name !== "exports") {
+            if (init.name !== 'exports') {
                 return;
             }
             // We have something like
@@ -259,10 +259,10 @@ function findNamedExports(
 function getDefaultExport(nodes) {
     let defaultName = null;
     nodes.some(node => {
-        if (node.type === "ExportDefaultDeclaration") {
+        if (node.type === 'ExportDefaultDeclaration') {
             return true;
         }
-        if (node.type !== "ExpressionStatement") {
+        if (node.type !== 'ExpressionStatement') {
             return false;
         }
         // Potential CommonJS export
@@ -270,14 +270,14 @@ function getDefaultExport(nodes) {
         if (!left || !right) {
             return false;
         }
-        if (left.name === "exports") {
+        if (left.name === 'exports') {
             return true;
         }
         if (!left.object || !left.property) {
             // foo = 'bar';
             return false;
         }
-        if (left.object.name === "module" && left.property.name === "exports") {
+        if (left.object.name === 'module' && left.property.name === 'exports') {
             defaultName = right.name;
             return true;
         }
@@ -301,7 +301,7 @@ function findRawNamedExports(data) {
     // eslint-disable-next-line no-cond-assign
     while ((match = pattern.exec(data)) !== null) {
         const name = match[1];
-        if (name !== "default") {
+        if (name !== 'default') {
             result.add(name);
         }
     }
@@ -333,9 +333,9 @@ function findRootNodes(ast) {
 
 function findNamedTypeExports(node) {
     if (
-        node.type !== "ExportNamedDeclaration" ||
+        node.type !== 'ExportNamedDeclaration' ||
         !node.declaration ||
-        node.declaration.type !== "TypeAlias"
+        node.declaration.type !== 'TypeAlias'
     ) {
         return [];
     }

@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
-import JsImport from "./jsImport";
+import * as vscode from 'vscode';
+import JsImport from './jsImport';
 
 export class ImportCompletion implements vscode.CompletionItemProvider {
     public provideCompletionItems(
@@ -8,18 +8,18 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
         token: vscode.CancellationToken
     ): Promise<vscode.CompletionItem[]> {
         let enabled = vscode.workspace
-            .getConfiguration("js-import", document.uri)
-            .get<string>("codeCompletion");
+            .getConfiguration('js-import', document.uri)
+            .get<string>('codeCompletion');
         let autofix = vscode.workspace
-            .getConfiguration("js-import", document.uri)
-            .get<string>("codeCompletionAction");
+            .getConfiguration('js-import', document.uri)
+            .get<string>('codeCompletionAction');
 
         if (!enabled) {
             return Promise.resolve([]);
         }
 
         return new Promise((resolve, reject) => {
-            let wordToComplete = "";
+            let wordToComplete = '';
             let range = document.getWordRangeAtPosition(position);
             if (range) {
                 const startPosition = range.start;
@@ -38,7 +38,7 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
                     const charBeforeRange = document.getText(
                         new vscode.Range(start, end)
                     );
-                    if (charBeforeRange === ".") {
+                    if (charBeforeRange === '.') {
                         return resolve([]);
                     }
                 }
@@ -55,14 +55,14 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
                 const handlers = [];
                 items.forEach(item => {
                     handlers.push({
-                        label: item.importObj.module.name.replace("type ", ""),
+                        label: item.importObj.module.name.replace('type ', ''),
                         kind: vscode.CompletionItemKind.Reference,
                         detail: item.label,
-                        documentation: "",
+                        documentation: '',
                         command: autofix
                             ? {
-                                  title: "Autocomplete",
-                                  command: "extension.fixImport",
+                                  title: 'Autocomplete',
+                                  command: 'extension.fixImport',
                                   arguments: [
                                       item.importObj,
                                       item.doc,
