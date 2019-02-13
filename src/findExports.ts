@@ -39,10 +39,7 @@ function findESNamedExports(node) {
         return [];
     }
 
-    if (
-        node.declaration.type === 'FunctionDeclaration' ||
-        node.declaration.type === 'ClassDeclaration'
-    ) {
+    if (node.declaration.type === 'FunctionDeclaration' || node.declaration.type === 'ClassDeclaration') {
         return [node.declaration.id.name];
     }
 
@@ -71,17 +68,11 @@ function resolveNestedNamedExports(node, absolutePathToFile) {
         node.arguments[0].type === 'StringLiteral'
     ) {
         // module.exports = require('someOtherFile.js');
-        const pathToRequiredFile = requireRelative.resolve(
-            node.arguments[0].value,
-            path.dirname(absolutePathToFile)
-        );
+        const pathToRequiredFile = requireRelative.resolve(node.arguments[0].value, path.dirname(absolutePathToFile));
 
         const requiredFileContent = fs.readFileSync(pathToRequiredFile, 'utf8');
         // eslint-disable-next-line no-use-before-define
-        const { named, defaultName } = findExports(
-            requiredFileContent,
-            pathToRequiredFile
-        );
+        const { named, defaultName } = findExports(requiredFileContent, pathToRequiredFile);
         return {
             named,
             defaultName
@@ -90,10 +81,7 @@ function resolveNestedNamedExports(node, absolutePathToFile) {
     return undefined;
 }
 
-function findCommonJSExports(
-    node,
-    { definedNames, absolutePathToFile, aliasesForExports }
-) {
+function findCommonJSExports(node, { definedNames, absolutePathToFile, aliasesForExports }) {
     if (node.type !== 'ExpressionStatement') {
         return [];
     }
@@ -126,15 +114,10 @@ function findCommonJSExports(
         return [];
     }
     if (
-        (left.object &&
-            left.object.name === 'module' &&
-            left.property.name === 'exports') ||
+        (left.object && left.object.name === 'module' && left.property.name === 'exports') ||
         aliasesForExports.has(left.name)
     ) {
-        const nestedNamed = resolveNestedNamedExports(
-            right,
-            absolutePathToFile
-        );
+        const nestedNamed = resolveNestedNamedExports(right, absolutePathToFile);
         if (nestedNamed) {
             return nestedNamed;
         }
@@ -190,9 +173,7 @@ function findDefinedNames(node, definedNames) {
         }
         if (init.type === 'ObjectExpression') {
             // eslint-disable-next-line no-param-reassign
-            definedNames[id.name] = init.properties
-                .map(({ key }) => key && key.name)
-                .filter(Boolean);
+            definedNames[id.name] = init.properties.map(({ key }) => key && key.name).filter(Boolean);
         } else if (init.type === 'FunctionExpression') {
             definedNames[id.name] = []; // eslint-disable-line no-param-reassign
         }
@@ -229,10 +210,7 @@ function findAliasesForExports(nodes) {
     return result;
 }
 
-function findNamedExports(
-    nodes,
-    { absolutePathToFile, definedNames, aliasesForExports }
-) {
+function findNamedExports(nodes, { absolutePathToFile, definedNames, aliasesForExports }) {
     const result = [];
     let defaultName = null;
     nodes.forEach(node => {
@@ -332,11 +310,7 @@ function findRootNodes(ast) {
 }
 
 function findNamedTypeExports(node) {
-    if (
-        node.type !== 'ExportNamedDeclaration' ||
-        !node.declaration ||
-        node.declaration.type !== 'TypeAlias'
-    ) {
+    if (node.type !== 'ExportNamedDeclaration' || !node.declaration || node.declaration.type !== 'TypeAlias') {
         return [];
     }
     return [node.declaration.id.name];
@@ -364,10 +338,7 @@ export default function findExports(data, absolutePathToFile) {
     });
 
     const defaultNameOrigin = getDefaultExport(rootNodes);
-    let hasDefault =
-        defaultNameOrigin != null ||
-        defaultName != null ||
-        aliasesForExports.size > 1;
+    let hasDefault = defaultNameOrigin != null || defaultName != null || aliasesForExports.size > 1;
     if (!hasDefault) {
         const rawExportedId = findRawDefaultExport(data);
         hasDefault = !!rawExportedId;

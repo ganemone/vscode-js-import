@@ -47,12 +47,7 @@ export default class ImportFixer {
     range: vscode.Range;
     options;
 
-    constructor(
-        importObj: ImportObj,
-        doc: vscode.TextDocument,
-        range: vscode.Range,
-        options
-    ) {
+    constructor(importObj: ImportObj, doc: vscode.TextDocument, range: vscode.Range, options) {
         this.importObj = importObj;
         this.doc = doc;
         this.range = range;
@@ -66,19 +61,11 @@ export default class ImportFixer {
         try {
             let importPath;
             if (this.importObj.isNodeModule) {
-                importPath = this.extractImportPathFromNodeModules(
-                    this.importObj
-                );
+                importPath = this.extractImportPathFromNodeModules(this.importObj);
             } else {
-                importPath = this.extractImportPathFromAlias(
-                    this.importObj,
-                    this.doc.uri.fsPath
-                );
+                importPath = this.extractImportPathFromAlias(this.importObj, this.doc.uri.fsPath);
                 if (importPath === null) {
-                    importPath = this.extractImportFromRoot(
-                        this.importObj,
-                        this.doc.uri.fsPath
-                    );
+                    importPath = this.extractImportFromRoot(this.importObj, this.doc.uri.fsPath);
                 }
             }
             this.resolveImport(importPath);
@@ -90,8 +77,7 @@ export default class ImportFixer {
                 body += error.stack;
             }
             open(
-                'https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=' +
-                    encodeURIComponent(body)
+                'https://github.com/wangtao0101/vscode-js-import/issues/new?title=new&body=' + encodeURIComponent(body)
             );
         }
     }
@@ -129,36 +115,24 @@ export default class ImportFixer {
                  */
                 return this.extractImportFromRoot(importObj, fsPath);
             }
-            let relativePath = path.relative(
-                aliasPath,
-                path.dirname(importObj.path)
-            );
+            let relativePath = path.relative(aliasPath, path.dirname(importObj.path));
             if (isWin()) {
                 relativePath = relativePath.replace(/\\/g, '/');
             }
             if (!importObj.module.isPlainFile && isIndexFile(filename)) {
-                importPath =
-                    relativePath === ''
-                        ? aliasKey
-                        : `${aliasKey}/${relativePath}`;
+                importPath = relativePath === '' ? aliasKey : `${aliasKey}/${relativePath}`;
             } else {
                 const parsePath = path.parse(importObj.path);
-                const filename = importObj.module.isPlainFile
-                    ? parsePath.base
-                    : parsePath.name;
+                const filename = importObj.module.isPlainFile ? parsePath.base : parsePath.name;
                 importPath =
-                    relativePath === ''
-                        ? `${aliasKey}/${filename}`
-                        : `${aliasKey}/${relativePath}/${filename}`;
+                    relativePath === '' ? `${aliasKey}/${filename}` : `${aliasKey}/${relativePath}/${filename}`;
             }
         }
         return importPath;
     }
 
     public extractImportFromRoot(importObj: ImportObj, filePath: string) {
-        const rootPath = vscode.workspace.getWorkspaceFolder(
-            Uri.file(filePath)
-        );
+        const rootPath = vscode.workspace.getWorkspaceFolder(Uri.file(filePath));
         let importPath = path.relative(filePath, importObj.path);
         const parsePath = path.parse(importPath);
         /**
@@ -175,9 +149,7 @@ export default class ImportFixer {
         if (!importObj.module.isPlainFile && isIndexFile(parsePath.base)) {
             importPath = `${dir}`;
         } else {
-            const name = importObj.module.isPlainFile
-                ? parsePath.base
-                : parsePath.name;
+            const name = importObj.module.isPlainFile ? parsePath.base : parsePath.name;
             importPath = `${dir}/${name}`;
         }
         return importPath;
@@ -186,9 +158,7 @@ export default class ImportFixer {
     public resolveImport(importPath) {
         const imports = parseImport(this.doc.getText());
         // TODO: here we can normalize moduleSpecifier
-        const filteredImports = imports.filter(
-            imp => imp.error === 0 && imp.moduleSpecifier === importPath
-        );
+        const filteredImports = imports.filter(imp => imp.error === 0 && imp.moduleSpecifier === importPath);
 
         let importStatement: ImportStatement = null;
         if (filteredImports.length === 0) {
@@ -201,24 +171,12 @@ export default class ImportFixer {
                 );
             } else if (this.importObj.module.default) {
                 importStatement = new ImportStatement(
-                    getImportDeclaration(
-                        this.importObj.module.name,
-                        null,
-                        [],
-                        importPath,
-                        position
-                    ),
+                    getImportDeclaration(this.importObj.module.name, null, [], importPath, position),
                     getImportOption(this.eol, true, this.options)
                 );
             } else {
                 importStatement = new ImportStatement(
-                    getImportDeclaration(
-                        null,
-                        null,
-                        [this.importObj.module.name],
-                        importPath,
-                        position
-                    ),
+                    getImportDeclaration(null, null, [this.importObj.module.name], importPath, position),
                     getImportOption(this.eol, true, this.options)
                 );
             }
@@ -229,10 +187,7 @@ export default class ImportFixer {
                 return;
             }
             if (this.importObj.module.default) {
-                if (
-                    imp.importedDefaultBinding !== null &&
-                    imp.importedDefaultBinding === this.importObj.module.name
-                ) {
+                if (imp.importedDefaultBinding !== null && imp.importedDefaultBinding === this.importObj.module.name) {
                     // TODO: we can format code
                     return;
                 } else if (
@@ -261,9 +216,7 @@ export default class ImportFixer {
                 }
                 importStatement = new ImportStatement(
                     Object.assign(imp, {
-                        namedImports: imp.namedImports.concat([
-                            this.importObj.module.name
-                        ])
+                        namedImports: imp.namedImports.concat([this.importObj.module.name])
                     }),
                     getImportOption(this.eol, false, this.options)
                 );
@@ -274,12 +227,7 @@ export default class ImportFixer {
         let edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
         edit.replace(
             this.doc.uri,
-            new vscode.Range(
-                iec.startLine,
-                iec.startColumn,
-                iec.endLine,
-                iec.endColumn
-            ),
+            new vscode.Range(iec.startLine, iec.startColumn, iec.endLine, iec.endColumn),
             iec.text
         );
         vscode.workspace.applyEdit(edit);
@@ -297,8 +245,7 @@ export default class ImportFixer {
                 position = new vscode.Position(imp.loc.end.line + 1, 0);
             } else {
                 position = new vscode.Position(
-                    imp.trailingComments[imp.trailingComments.length - 1].loc
-                        .end.line + 1,
+                    imp.trailingComments[imp.trailingComments.length - 1].loc.end.line + 1,
                     0
                 );
             }
@@ -332,10 +279,7 @@ export default class ImportFixer {
                         position = new vscode.Position(0, 0);
                     } else {
                         comment = comments[index - 1];
-                        position = new vscode.Position(
-                            comment.loc.end.line + 1,
-                            0
-                        );
+                        position = new vscode.Position(comment.loc.end.line + 1, 0);
                     }
                 }
             }

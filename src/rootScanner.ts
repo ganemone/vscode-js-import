@@ -53,10 +53,7 @@ export default class RootScanner {
     }
 
     public scanAllImport() {
-        const relativePattern = new RelativePattern(
-            this.workspaceFolder,
-            this.options.filesToScan
-        );
+        const relativePattern = new RelativePattern(this.workspaceFolder, this.options.filesToScan);
         // TODO: filter file not in src
         vscode.workspace
             .findFiles(relativePattern, this.options.excludeFilesToScan, 99999)
@@ -80,31 +77,22 @@ export default class RootScanner {
     }
 
     private processPlainFiles() {
-        const relativePattern = new vscode.RelativePattern(
-            this.workspaceFolder,
-            this.options.plainFilesGlob
-        );
-        vscode.workspace
-            .findFiles(relativePattern, this.options.excludeFilesToScan, 99999)
-            .then(files => {
-                files
-                    .filter(f => {
-                        return f.fsPath.indexOf('node_modules') === -1;
-                    })
-                    .map(url => {
-                        this.processPlainFile(url);
-                    });
-            });
+        const relativePattern = new vscode.RelativePattern(this.workspaceFolder, this.options.plainFilesGlob);
+        vscode.workspace.findFiles(relativePattern, this.options.excludeFilesToScan, 99999).then(files => {
+            files
+                .filter(f => {
+                    return f.fsPath.indexOf('node_modules') === -1;
+                })
+                .map(url => {
+                    this.processPlainFile(url);
+                });
+        });
     }
 
     public processPlainFile(url: vscode.Uri) {
         const parsedFile = path.parse(url.fsPath);
         const name = base2camel(parsedFile.name);
-        if (
-            this.options.emptyMemberPlainFiles.includes(
-                parsedFile.ext.replace('.', '')
-            )
-        ) {
+        if (this.options.emptyMemberPlainFiles.includes(parsedFile.ext.replace('.', ''))) {
             this.cache[`${url.fsPath}-${name}`] = {
                 path: url.fsPath,
                 module: {
@@ -145,12 +133,7 @@ export default class RootScanner {
             // use for unnamed identifier
             const moduleName = path.basename(path.dirname(file.fsPath));
             const isIndex = fileName === 'index';
-            const modules = this.interpreter.run(
-                data,
-                isIndex,
-                moduleName,
-                fileName
-            );
+            const modules = this.interpreter.run(data, isIndex, moduleName, fileName);
             let defaultModule = null;
             let shouldParse = false;
             modules.forEach(m => {
@@ -169,11 +152,7 @@ export default class RootScanner {
             });
             if (shouldParse) {
                 // only complex export should be parsed
-                const parsedModules = this.interpreter.runMainFile(
-                    data,
-                    moduleName,
-                    file.fsPath
-                );
+                const parsedModules = this.interpreter.runMainFile(data, moduleName, file.fsPath);
                 parsedModules.forEach(m => {
                     if (this.cache[`${file.fsPath}-${m.name}`] == null) {
                         if (m.default && defaultModule != null) {
@@ -193,22 +172,14 @@ export default class RootScanner {
 
     public findModulesInPackageJson() {
         const modules = [];
-        const packageJsonPath = path.join(
-            this.workspaceFolder.uri.fsPath,
-            'package.json'
-        );
+        const packageJsonPath = path.join(this.workspaceFolder.uri.fsPath, 'package.json');
         if (fs.existsSync(packageJsonPath)) {
             fs.readFile(packageJsonPath, 'utf8', (err, data) => {
                 if (err) {
                     return console.log(err);
                 }
                 const packageJson = JSON.parse(data);
-                [
-                    'dependencies',
-                    'devDependencies',
-                    'peerDependencies',
-                    'optionalDependencies'
-                ].forEach(key => {
+                ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
                     if (packageJson.hasOwnProperty(key)) {
                         modules.push(...Object.keys(packageJson[key]));
                     }
@@ -221,9 +192,7 @@ export default class RootScanner {
 
     private deleteUnusedModules(modules: Array<string>) {
         const keys = Object.keys(this.nodeModuleCache);
-        const notexists = keys.filter(
-            key => !modules.includes(this.nodeModuleCache[key].path)
-        );
+        const notexists = keys.filter(key => !modules.includes(this.nodeModuleCache[key].path));
         notexists.forEach(name => {
             if (this.nodeModuleCache[name] != null) {
                 delete this.nodeModuleVersion[this.nodeModuleCache[name].path];
@@ -235,11 +204,7 @@ export default class RootScanner {
 
     private cacheModules(modules) {
         modules.forEach(moduleName => {
-            const modulePath = path.join(
-                this.workspaceFolder.uri.fsPath,
-                'node_modules',
-                moduleName
-            );
+            const modulePath = path.join(this.workspaceFolder.uri.fsPath, 'node_modules', moduleName);
             const packageJsonPath = path.join(modulePath, 'package.json');
             if (fs.existsSync(packageJsonPath)) {
                 fs.readFile(packageJsonPath, 'utf-8', (err, data) => {
@@ -248,11 +213,7 @@ export default class RootScanner {
                     }
                     const packageJson = JSON.parse(data);
                     if (!this.isCachedByVersion(moduleName, packageJson)) {
-                        this.cacheModulesFromMain(
-                            moduleName,
-                            modulePath,
-                            packageJson
-                        );
+                        this.cacheModulesFromMain(moduleName, modulePath, packageJson);
                     }
                 });
             }
@@ -275,12 +236,7 @@ export default class RootScanner {
                     return console.log(err);
                 }
                 const moduleKebabName = kebab2camel(moduleName);
-                const modules = this.interpreter.run(
-                    data,
-                    true,
-                    moduleKebabName,
-                    ''
-                );
+                const modules = this.interpreter.run(data, true, moduleKebabName, '');
                 let defaultModule = null;
                 modules.forEach(m => {
                     if (m.parse) {
@@ -295,15 +251,9 @@ export default class RootScanner {
                         defaultModule = m;
                     }
                 });
-                const parsedModules = this.interpreter.runMainFile(
-                    data,
-                    moduleKebabName,
-                    mainFilePath
-                );
+                const parsedModules = this.interpreter.runMainFile(data, moduleKebabName, mainFilePath);
                 parsedModules.forEach(m => {
-                    if (
-                        this.nodeModuleCache[`${moduleName}-${m.name}`] == null
-                    ) {
+                    if (this.nodeModuleCache[`${moduleName}-${m.name}`] == null) {
                         if (m.default && defaultModule != null) {
                             return;
                         }
@@ -322,9 +272,7 @@ export default class RootScanner {
     public isCachedByVersion(moduleName, packageJson) {
         if (packageJson.hasOwnProperty('version')) {
             if (this.nodeModuleVersion[moduleName] != null) {
-                if (
-                    this.nodeModuleVersion[moduleName] === packageJson.version
-                ) {
+                if (this.nodeModuleVersion[moduleName] === packageJson.version) {
                     return true;
                 } else {
                     this.nodeModuleVersion[moduleName] = packageJson.version;

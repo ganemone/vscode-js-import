@@ -38,26 +38,10 @@ export default class Interpreter {
 
     private static importBlockRegex = /[\w]+/g;
 
-    private static unWantedName = [
-        '__esModule',
-        'function',
-        'exports',
-        'require',
-        'default'
-    ];
+    private static unWantedName = ['__esModule', 'function', 'exports', 'require', 'default'];
 
-    public run(
-        text: string,
-        isIndex: boolean,
-        moduleName: string,
-        fileName: string
-    ) {
-        return this.extractModuleFromFile(
-            strip(text).text,
-            isIndex,
-            moduleName,
-            fileName
-        );
+    public run(text: string, isIndex: boolean, moduleName: string, fileName: string) {
+        return this.extractModuleFromFile(strip(text).text, isIndex, moduleName, fileName);
     }
 
     private addDefaultName(name: string, resultList: Array<ModuleItem>) {
@@ -75,12 +59,7 @@ export default class Interpreter {
         }
     }
 
-    private extractModuleFromFile(
-        text: string,
-        isIndex: boolean,
-        moduleName: string,
-        fileName: string
-    ) {
+    private extractModuleFromFile(text: string, isIndex: boolean, moduleName: string, fileName: string) {
         const nameList: Array<string> = [];
         const resultList: Array<ModuleItem> = [];
         let res;
@@ -96,19 +75,13 @@ export default class Interpreter {
             if (res[4] != null) {
                 resultList.push({
                     default: true,
-                    name:
-                        res[0] && res[0].startsWith('export default type')
-                            ? `type ${res[5]}`
-                            : res[5]
+                    name: res[0] && res[0].startsWith('export default type') ? `type ${res[5]}` : res[5]
                 });
                 continue;
             }
             for (i = 5; i <= 8; i += 1) {
                 if (res[i] != null) {
-                    if (
-                        !this.isUnwantedName(res[i]) &&
-                        !nameList.includes(res[i])
-                    ) {
+                    if (!this.isUnwantedName(res[i]) && !nameList.includes(res[i])) {
                         if (res[0] && res[0].startsWith('export type')) {
                             nameList.push(`type ${res[i]}`);
                         } else {
@@ -201,10 +174,7 @@ export default class Interpreter {
             if (result.hasDefault) {
                 resultList.push({
                     default: true,
-                    name:
-                        result.defaultName != null
-                            ? result.defaultName
-                            : moduleName
+                    name: result.defaultName != null ? result.defaultName : moduleName
                 });
             }
             result.named.forEach(name => {

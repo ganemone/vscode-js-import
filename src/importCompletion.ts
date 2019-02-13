@@ -7,12 +7,8 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
         position: vscode.Position,
         token: vscode.CancellationToken
     ): Promise<vscode.CompletionItem[]> {
-        let enabled = vscode.workspace
-            .getConfiguration('js-import', document.uri)
-            .get<string>('codeCompletion');
-        let autofix = vscode.workspace
-            .getConfiguration('js-import', document.uri)
-            .get<string>('codeCompletionAction');
+        let enabled = vscode.workspace.getConfiguration('js-import', document.uri).get<string>('codeCompletion');
+        let autofix = vscode.workspace.getConfiguration('js-import', document.uri).get<string>('codeCompletionAction');
 
         if (!enabled) {
             return Promise.resolve([]);
@@ -27,31 +23,16 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
                     /**
                      * if the charator before word is '.', we don't need to return any items.
                      */
-                    const start = new vscode.Position(
-                        startPosition.line,
-                        startPosition.character - 1
-                    );
-                    const end = new vscode.Position(
-                        startPosition.line,
-                        startPosition.character
-                    );
-                    const charBeforeRange = document.getText(
-                        new vscode.Range(start, end)
-                    );
+                    const start = new vscode.Position(startPosition.line, startPosition.character - 1);
+                    const end = new vscode.Position(startPosition.line, startPosition.character);
+                    const charBeforeRange = document.getText(new vscode.Range(start, end));
                     if (charBeforeRange === '.') {
                         return resolve([]);
                     }
                 }
 
-                wordToComplete = document
-                    .getText(new vscode.Range(range.start, position))
-                    .toLowerCase();
-                const items = JsImport.resolveItems(
-                    wordToComplete,
-                    document,
-                    range,
-                    false
-                );
+                wordToComplete = document.getText(new vscode.Range(range.start, position)).toLowerCase();
+                const items = JsImport.resolveItems(wordToComplete, document, range, false);
                 const handlers = [];
                 items.forEach(item => {
                     handlers.push({
@@ -63,11 +44,7 @@ export class ImportCompletion implements vscode.CompletionItemProvider {
                             ? {
                                   title: 'Autocomplete',
                                   command: 'extension.fixImport',
-                                  arguments: [
-                                      item.importObj,
-                                      item.doc,
-                                      item.range
-                                  ]
+                                  arguments: [item.importObj, item.doc, item.range]
                               }
                             : null
                     });
